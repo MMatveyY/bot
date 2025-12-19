@@ -4,19 +4,32 @@ from typing import List, Dict, Optional
 import yaml
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import os
+# Добавьте в начало файла (после других импортов)
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from ml_models.mutator import mutate_payload_beam
 
 class PayloadGenerator:
-    def __init__(self, config_path: str = "config.yaml"):
-        with open(config_path, 'r') as f:
-            self.config = yaml.safe_load(f)
-        
-        # Загружаем базу пейлоадов
-        self.payloads_db = self.load_payloads_database()
-        
-        # Инициализируем ML модель для генерации
-        self.ml_enabled = self.config.get('ml_models', {}).get('enabled', False)
-        if self.ml_enabled:
-            self.init_ml_model()
+    import yaml
+    import os
+
+    class PayloadGenerator:
+        def __init__(self, config_path="config.yaml"):
+            # Загрузка конфига
+            with open(config_path, 'r') as f:
+                self.config = yaml.safe_load(f)
+
+            # Получение настроек
+            self.ml_enabled = self.config['ml']['enabled']
+            self.model_path = self.config['ml']['model_path']
+
+            if self.ml_enabled and os.path.exists(self.model_path):
+                self.load_ml_model()
+
+            # Настройки payloads
+            self.payloads_config = self.config['payloads']
+            self.max_payloads = self.payloads_config['max_total_payloads']
     
     def load_payloads_database(self) -> Dict:
         """Загружаем структурированную базу пейлоадов"""
@@ -265,3 +278,13 @@ class PayloadGenerator:
     def get_statistics(self) -> Dict:
         """Статистика по базе пейлоадов"""
         return self.payloads_db.get('statistics', {})
+
+    def mutate_payload_ml(self, payload):
+        """Мутация пейлоада с использованием готовой ML-модели"""
+        try:
+            # Используем готовую функцию мутации из ml_models
+            mutated = mutate_payload_beam(payload, model_path=self.model_path)
+            return mutated if mutated else payload
+        except Exception as e:
+            print(f"[Ошибка ML-мутации]: {e}. Использую базовую мутацию.")
+            return self.mutate_payload_basic(payload)

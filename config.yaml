@@ -1,85 +1,370 @@
-# Конфигурация инструмента тестирования WAF
+# ============================================================================
+# КОНФИГУРАЦИЯ ИНСТРУМЕНТА ТЕСТИРОВАНИЯ WAF
+# Версия 2.0 | Автоматически адаптируется к любой системе
+# ============================================================================
 
-# Настройки целевой системы
+# СЕКЦИЯ 1: НАСТРОЙКИ ЦЕЛЕВОЙ СИСТЕМЫ
+# ============================================================================
 target:
-  url: "http://test.com"
-  method: "GET"
-  parameters:
+  # Базовый URL для тестирования (можно переопределить в GUI/CLI)
+  base_url: "http://localhost:8080"
+
+  # Параметры по умолчанию для тестирования
+  default_params:
     - name: "q"
       value: "{payload}"
     - name: "search"
       value: "{payload}"
-  headers:
-    User-Agent: "WAF-Tester/1.0"
-    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-  cookies:
-    session: "test_session_123"
+    - name: "id"
+      value: "{payload}"
 
-# Настройки пейлоадов
+  # Заголовки HTTP по умолчанию
+  default_headers:
+    User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 WAF-Tester/2.0"
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+    Accept-Language: "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7"
+    Connection: "keep-alive"
+
+  # Cookies для тестирования (если нужна авторизация)
+  default_cookies:
+    session_id: "test_session_12345"
+    csrf_token: "abc123def456"
+
+  # Настройки SSL
+  ssl_verify: false  # Для самоподписанных сертификатов
+  follow_redirects: true
+  max_redirects: 5
+
+# СЕКЦИЯ 2: НАСТРОЙКИ ПОЛЬЗОВАТЕЛЬСКОГО ИНТЕРФЕЙСА
+# ============================================================================
+gui:
+  # Настройки окна
+  window_title: "WAF Tester v2.0 - Дипломный проект"
+  window_size: [1200, 800]  # [ширина, высота]
+
+  # Цветовая схема (можно выбрать: "dark", "light", "blue")
+  theme: "dark"
+
+  # Настройки таблицы результатов
+  table:
+    auto_resize_columns: true
+    alternate_row_colors: true
+    show_grid: true
+
+  # Настройки логов
+  logging:
+    max_log_lines: 1000
+    show_timestamps: true
+    log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+
+# СЕКЦИЯ 3: НАСТРОЙКИ ГЕНЕРАЦИИ PAYLOADS
+# ============================================================================
 payloads:
+  # Пути к файлам с пейлоадами (относительные пути)
   database_path: "payloads/payloads.json"
-  directory: "payloads"
-  types:
+  directories:
+    reflected: "payloads/reflected/"
+    stored: "payloads/stored/"
+    dom_based: "payloads/dom-based/"
+
+  # Лимиты генерации
+  max_payloads_per_type: 50
+  max_total_payloads: 200
+
+  # Типы пейлоадов для тестирования
+  enabled_types:
     - "reflected"
     - "stored"
     - "dom-based"
-  count_per_type: 50
-  use_ml_variations: true
 
-# Настройки ML
+  # Категории сложности
+  enabled_categories:
+    - "basic"
+    - "advanced"
+
+  # Настройки мутации
+  mutation:
+    enabled: true
+    ml_mutation: true
+    basic_mutation: true
+    max_mutations_per_payload: 3
+
+# СЕКЦИЯ 4: НАСТРОЙКИ МАШИННОГО ОБУЧЕНИЯ
+# ============================================================================
 ml:
+  # Основные настройки
   enabled: true
-  model_name: "distilgpt2"
-  variations_per_payload: 3
-  temperature: 0.8
-  max_length: 100
+  model_path: "ml_models/trained/xss_model.pt"
+  dataset_path: "ml_models/datasets/xss-list-unique.txt"
 
-# Настройки тестирования
+  # Настройки инференса
+  inference:
+    device: "auto"  # auto, cpu, cuda
+    batch_size: 8
+    temperature: 0.8
+    top_k: 50
+    top_p: 0.9
+
+  # Настройки мутации через beam search
+  beam_search:
+    enabled: true
+    beam_width: 5
+    max_length: 100
+    use_sampling: true
+
+  # Настройки обучения (если будете дообучать)
+  training:
+    epochs: 10
+    learning_rate: 0.001
+    batch_size: 32
+    validation_split: 0.2
+    save_best_only: true
+
+# СЕКЦИЯ 5: НАСТРОЙКИ ТЕСТИРОВАНИЯ
+# ============================================================================
 testing:
-  threads: 10
-  delay_between_requests: 0.1  # секунды
-  timeout: 10  # секунды
-  max_retries: 3
-  follow_redirects: true
+  # Параллельное выполнение
+  max_workers: 10
+  thread_pool_size: 15
 
-# Настройки WAF детекции
+  # Настройки запросов
+  request:
+    timeout: 10.0  # секунды
+    delay_between_requests: 0.5  # секунды
+    max_retries: 3
+    retry_delay: 1.0  # секунды
+
+  # Методы тестирования
+  enabled_methods:
+    - "GET"
+    - "POST"
+    - "HEADER"
+
+  # Настройки POST-запросов
+  post_data:
+    default_fields:
+      - name: "username"
+        value: "{payload}"
+      - name: "comment"
+        value: "{payload}"
+      - name: "email"
+        value: "test{payload}@example.com"
+
+# СЕКЦИЯ 6: НАСТРОЙКИ ДЕТЕКЦИИ WAF
+# ============================================================================
 waf_detection:
   enabled: true
+
+  # Методы детекции
   detection_methods:
     - "headers"
-    - "response_body"
-    - "response_codes"
+    - "response_patterns"
+    - "behavior_analysis"
+    - "fingerprinting"
+
+  # Известные WAF для распознавания
   known_wafs:
-    cloudflare:
-      headers:
-        - "cf-ray"
-        - "server: cloudflare"
-      response_codes: [403, 503]
-    modsecurity:
-      headers:
-        - "mod_security"
-        - "modsecurity"
-    akamai:
-      headers:
-        - "x-akamai-transformed"
+    - "Cloudflare"
+    - "ModSecurity"
+    - "AWS WAF"
+    - "Akamai"
+    - "Imperva"
+    - "F5 BIG-IP"
+    - "FortiWeb"
+    - "Citrix Netscaler"
+    - "Barracuda"
+    - "Sucuri"
 
-# Настройки отчетов
+  # Настройки фингерпринтинга
+  fingerprinting:
+    enabled: true
+    test_payloads:
+      - "<script>alert('WAF_TEST')</script>"
+      - "' OR '1'='1"
+      - "../../etc/passwd"
+      - "<img src=x onerror=alert(1)>"
+    timeout_per_test: 3.0
+
+# СЕКЦИЯ 7: НАСТРОЙКИ ОТЧЕТОВ
+# ============================================================================
 reports:
-  output_dir: "reports"
-  formats:
-    - "html"
-    - "json"
-    - "txt"
-  include_request_response: false
-  generate_summary: true
-  timestamp_format: "%Y-%m-%d_%H-%M-%S"
+  # Общие настройки
+  auto_generate: true
+  output_directory: "reports"
+  timestamp_format: "%Y%m%d_%H%M%S"
 
-# Настройки безопасности
+  # Форматы отчетов
+  formats:
+    json:
+      enabled: true
+      pretty_print: true
+      include_full_data: false
+    html:
+      enabled: true
+      template: "default"
+      include_charts: true
+    txt:
+      enabled: true
+      include_summary: true
+    pdf:
+      enabled: false  # Требует дополнительных библиотек
+    csv:
+      enabled: true
+      delimiter: ","
+
+  # Настройки содержимого
+  content:
+    include_request_details: true
+    include_response_headers: false
+    include_response_body: false  # Может быть большим!
+    include_statistics: true
+    include_recommendations: true
+    include_charts: true
+
+  # Настройки визуализации
+  charts:
+    enabled: true
+    types:
+      - "success_rate"
+      - "by_payload_type"
+      - "response_time"
+      - "waf_effectiveness"
+    format: "png"
+    dpi: 150
+
+# СЕКЦИЯ 8: НАСТРОЙКИ БЕЗОПАСНОСТИ
+# ============================================================================
 security:
+  # Режимы работы
   test_mode_only: true
   require_confirmation: true
+
+  # Ограничения по доменам/IP
   allowed_domains:
     - "localhost"
     - "127.0.0.1"
-    - "test.com"
-  block_public_ips: true
+    - "192.168.*"
+    - "10.*"
+
+  blocked_domains:
+    - "*.gov.ru"
+    - "*.bank.ru"
+    - "*.mil.ru"
+
+  # Защита от непреднамеренного использования
+  rate_limiting:
+    enabled: true
+    max_requests_per_minute: 60
+    max_requests_per_target: 1000
+
+  # Проверки перед запуском
+  preflight_checks:
+    check_internet: true
+    check_target_availability: true
+    check_disk_space: true
+    min_disk_space_mb: 100
+
+# СЕКЦИЯ 9: НАСТРОЙКИ ЛОГИРОВАНИЯ
+# ============================================================================
+logging:
+  # Общие настройки
+  enabled: true
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "[%(asctime)s] [%(levelname)s] [%(module)s] %(message)s"
+
+  # Файлы логов
+  file:
+    enabled: true
+    path: "logs/waf_tester.log"
+    max_size_mb: 10
+    backup_count: 5
+
+  # Консольный вывод
+  console:
+    enabled: true
+    use_colors: true
+
+  # Логирование отдельных модулей
+  modules:
+    payload_generator: "INFO"
+    request_sender: "INFO"
+    response_analyzer: "DEBUG"
+    waf_detector: "INFO"
+    ml_models: "INFO"
+    gui: "INFO"
+
+# СЕКЦИЯ 10: НАСТРОЙКИ ПРОИЗВОДИТЕЛЬНОСТИ
+# ============================================================================
+performance:
+  # Кэширование
+  caching:
+    enabled: true
+    max_cache_size: 1000
+    ttl_seconds: 3600
+
+  # Оптимизация памяти
+  memory:
+    max_payloads_in_memory: 500
+    clear_cache_on_exit: true
+
+  # Многопоточность
+  threading:
+    max_worker_threads: 20
+    queue_size: 100
+
+  # Настройки для больших тестов
+  large_tests:
+    chunk_size: 50
+    save_progress: true
+    progress_file: "progress.json"
+
+# СЕКЦИЯ 11: ЭКСПЕРИМЕНТАЛЬНЫЕ ФУНКЦИИ
+# ============================================================================
+experimental:
+  # Расширенный анализ WAF
+  advanced_waf_analysis: false
+
+  # Генерация эксплойтов
+  exploit_generation: false
+
+  # Автоматическое обучение модели
+  auto_retraining: false
+
+  # Интеграция с внешними API
+  external_apis:
+    enabled: false
+    virus_total_api_key: ""
+    shodan_api_key: ""
+
+  # Тестирование новых алгоритмов
+  new_algorithms:
+    genetic_mutation: false
+    reinforcement_learning: false
+
+# СЕКЦИЯ 12: НАСТРОЙКИ ДЛЯ РАЗРАБОТЧИКОВ
+# ============================================================================
+development:
+  # Режим отладки
+  debug_mode: false
+  profile_performance: false
+
+  # Тестовые данные
+  test_data:
+    use_mock_responses: false
+    mock_response_delay: 0.1
+    success_rate_percent: 85
+
+  # Быстрые тесты
+  quick_test:
+    enabled: false
+    max_payloads: 10
+    test_types: ["reflected"]
+
+  # Автоматические обновления
+  auto_update:
+    check_for_updates: true
+    github_repo: "MMatveyY/bot"
+
+# ============================================================================
+# КОНЕЦ КОНФИГУРАЦИИ
+# ============================================================================
