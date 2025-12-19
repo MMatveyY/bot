@@ -1,0 +1,85 @@
+# Конфигурация инструмента тестирования WAF
+
+# Настройки целевой системы
+target:
+  url: "http://test.com"
+  method: "GET"
+  parameters:
+    - name: "q"
+      value: "{payload}"
+    - name: "search"
+      value: "{payload}"
+  headers:
+    User-Agent: "WAF-Tester/1.0"
+    Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+  cookies:
+    session: "test_session_123"
+
+# Настройки пейлоадов
+payloads:
+  database_path: "payloads/payloads.json"
+  directory: "payloads"
+  types:
+    - "reflected"
+    - "stored"
+    - "dom-based"
+  count_per_type: 50
+  use_ml_variations: true
+
+# Настройки ML
+ml:
+  enabled: true
+  model_name: "distilgpt2"
+  variations_per_payload: 3
+  temperature: 0.8
+  max_length: 100
+
+# Настройки тестирования
+testing:
+  threads: 10
+  delay_between_requests: 0.1  # секунды
+  timeout: 10  # секунды
+  max_retries: 3
+  follow_redirects: true
+
+# Настройки WAF детекции
+waf_detection:
+  enabled: true
+  detection_methods:
+    - "headers"
+    - "response_body"
+    - "response_codes"
+  known_wafs:
+    cloudflare:
+      headers:
+        - "cf-ray"
+        - "server: cloudflare"
+      response_codes: [403, 503]
+    modsecurity:
+      headers:
+        - "mod_security"
+        - "modsecurity"
+    akamai:
+      headers:
+        - "x-akamai-transformed"
+
+# Настройки отчетов
+reports:
+  output_dir: "reports"
+  formats:
+    - "html"
+    - "json"
+    - "txt"
+  include_request_response: false
+  generate_summary: true
+  timestamp_format: "%Y-%m-%d_%H-%M-%S"
+
+# Настройки безопасности
+security:
+  test_mode_only: true
+  require_confirmation: true
+  allowed_domains:
+    - "localhost"
+    - "127.0.0.1"
+    - "test.com"
+  block_public_ips: true
